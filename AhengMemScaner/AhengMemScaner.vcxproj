@@ -196,6 +196,10 @@
     <ClInclude Include="targetmem.h" />
     <ClInclude Include="value.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile.am" />
+    <None Include="Makefile.android" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

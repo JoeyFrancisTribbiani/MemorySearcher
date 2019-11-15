@@ -40,4 +40,8 @@
     <ClInclude Include="value.h" />
     <ClInclude Include="config.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile.am" />
+    <None Include="Makefile.android" />
+  </ItemGroup>
 </Project>

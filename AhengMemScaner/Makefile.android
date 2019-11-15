@@ -1,0 +1,21 @@
+CC = /tmp/my-android-toolchain/bin/arm-linux-androideabi-gcc
+CFLAGS = -std=gnu99  -g -O2 -Wall -I$(LUA_INC) -I$(SYSROOT)
+SHARED := -fPIC --shared
+ 
+TARGET = Memory.so
+LUA_CLIB_PATH = clib
+SYSROOT=/tmp/my-android-toolchain/sysroot/usr/include
+ 
+# 引入lua头文件
+LUA_INC ?= ./src
+
+start: $(TARGET)
+
+$(TARGET) : Memory.c    common.c     show_message.c  	commands.c    ptrace.c          handlers.c       interrupt.c      maps.c     scanmem.c     scanroutines.c        sets.c    targetmem.c     value.c  | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@
+
+clean:
+	rm -fr $(TARGET)
+              
+$(LUA_CLIB_PATH) :
+	mkdir $(LUA_CLIB_PATH)

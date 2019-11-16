@@ -43,5 +43,39 @@
   <ItemGroup>
     <None Include="Makefile.am" />
     <None Include="Makefile.android" />
+    <None Include=".gitignore" />
+    <None Include=".travis.yml" />
+    <None Include="aclocal.m4" />
+    <None Include="AUTHORS" />
+    <None Include="autogen.sh" />
+    <None Include="build_for_android.sh" />
+    <None Include="ChangeLog" />
+    <None Include="compile" />
+    <None Include="config.guess" />
+    <None Include="config.h.in" />
+    <None Include="config.status" />
+    <None Include="config.sub" />
+    <None Include="configure" />
+    <None Include="configure.ac" />
+    <None Include="COPYING" />
+    <None Include="depcomp" />
+    <None Include="install-sh" />
+    <None Include="libtool" />
+    <None Include="ltmain.sh" />
+    <None Include="Makefile" />
+    <None Include="read.lua" />
+    <None Include="missing" />
+    <None Include="search.lua" />
+    <None Include="write.lua" />
+    <None Include="TODO" />
+    <None Include="test-driver" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="config.log" />
+    <Text Include="gpl-3.0.txt" />
+    <Text Include="lgpl-3.0.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="Memory.so" />
   </ItemGroup>
 </Project>

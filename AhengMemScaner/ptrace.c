@@ -684,7 +684,7 @@ bool sm_setaddr(pid_t target, void *addr, const value_t *to)
         return false;
     }
 
-    uint val_length = flags_to_memlength(ANYNUMBER, to->flags);
+    unsigned int val_length = flags_to_memlength(ANYNUMBER, to->flags);
     if (val_length > 0) {
         /* Basically, overwrite as much of the data as makes sense, and no more. */
         memcpy(memarray, to->bytes, val_length);
@@ -711,6 +711,7 @@ bool sm_read_array(pid_t target, const void *addr, void *buf, size_t len)
     if (sm_attach(target) == false) {
         return false;
     }
+    printf("hehe");
 
     size_t nread = readmemory(buf, addr, len);
     if (nread < len)

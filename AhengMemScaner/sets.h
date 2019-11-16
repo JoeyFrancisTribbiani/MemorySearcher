@@ -23,6 +23,7 @@
 #define SETS_H
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 struct set {
     size_t  size; /* size of set (used) */

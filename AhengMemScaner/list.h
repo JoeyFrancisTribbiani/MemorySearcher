@@ -25,149 +25,149 @@
 #include <stdlib.h>
 
 typedef struct element {
-    void *data;
-    struct element *next;
+	void *data;
+	struct element *next;
 } element_t;
 
 typedef struct {
-    size_t size;
-    element_t *head;
-    element_t *tail;
+	size_t size;
+	element_t *head;
+	element_t *tail;
 } list_t;
 
 /* create a new list */
 static inline list_t *l_init(void)
 {
-    return calloc(1, sizeof(list_t));
+	return calloc(1, sizeof(list_t));
 }
 
 /* add a new element to the list */
 static inline int l_append(list_t *list, element_t *element, void *data)
 {
-    element_t *n = calloc(1, sizeof(element_t));
+	element_t *n = calloc(1, sizeof(element_t));
 
-    if (n == NULL)
-        return -1;
+	if (n == NULL) {
+		printf("n is null.\n");
+		return -1;
+	}
 
-    n->data = data;
+	n->data = data;
 
-    /* insert at head or tail */
-    if (element == NULL) {
-        if (list->size == 0) {
-            list->tail = n;
-        }
+	/* insert at head or tail */
+	if (element == NULL) {
+		if (list->size == 0) {
+			list->tail = n;
+		}
 
-        n->next = list->head;
-        list->head = n;
-    } else {
+		n->next = list->head;
+		list->head = n;
+	} else {
+		/* insertion at the middle of a list */
+		if (element->next == NULL) {
+			list->tail = n;
+		}
 
-        /* insertion at the middle of a list */
-        if (element->next == NULL) {
-            list->tail = n;
-        }
+		n->next = element->next;
+		element->next = n;
+	}
 
-        n->next = element->next;
-        element->next = n;
-    }
+	list->size++;
 
-    list->size++;
-
-    return 0;
+	return 0;
 }
 
 /* remove the element at element->next */
 static inline void l_remove(list_t *list, element_t *element, void **data)
 {
-    element_t *o;
+	element_t *o;
 
-    /* remove from head */
-    if (element == NULL) {
-        if (data) {
-            *data = list->head->data;
-        }
+	/* remove from head */
+	if (element == NULL) {
+		if (data) {
+			*data = list->head->data;
+		}
 
-        o = list->head;
+		o = list->head;
 
-        list->head = o->next;
+		list->head = o->next;
 
-        if (list->size == 1) {
-            list->tail = NULL;
-        }
-    } else {
-        if (data) {
-            *data = element->next->data;
-        }
+		if (list->size == 1) {
+			list->tail = NULL;
+		}
+	} else {
+		if (data) {
+			*data = element->next->data;
+		}
 
-        o = element->next;
+		o = element->next;
 
+		if ((element->next = element->next->next) == NULL) {
+			list->tail = element;
+		}
+	}
 
-        if ((element->next = element->next->next) == NULL) {
-            list->tail = element;
-        }
-    }
+	if (data == NULL)
+		free(o->data);
 
-    if (data == NULL)
-        free(o->data);
+	free(o);
 
-    free(o);
+	list->size--;
 
-    list->size--;
-
-    return;
+	return;
 }
 
 /* remove the nth element from head */
 static inline void l_remove_nth(list_t *list, size_t n, void **data)
 {
-    element_t *np = list->head;
+	element_t *np = list->head;
 
-    /* traverse to correct element */
-    while (n--) {
-        if ((np = np->next) == NULL)
-            /* return */ abort();
-    }
+	/* traverse to correct element */
+	while (n--) {
+		if ((np = np->next) == NULL)
+			/* return */ abort();
+	}
 
-    l_remove(list, np, data);
+	l_remove(list, np, data);
 }
 
 /* destroy the whole list */
 static inline void l_destroy(list_t *list)
 {
-    void *data;
+	void *data;
 
-    if (list == NULL)
-        return;
+	if (list == NULL)
+		return;
 
-    /* remove every element */
-    while (list->size) {
-        l_remove(list, NULL, &data);
-        free(data);
-    }
+	/* remove every element */
+	while (list->size) {
+		l_remove(list, NULL, &data);
+		free(data);
+	}
 
-    free(list);
+	free(list);
 }
 
 /* concatenate list src with list dst */
 static inline int l_concat(list_t *dst, list_t **src)
 {
-    void *data;
-    element_t *n;
+	void *data;
+	element_t *n;
 
-    n = (*src)->head;
+	n = (*src)->head;
 
-    while (n) {
-        l_remove(*src, NULL, &data);
-        if (l_append(dst, NULL, data) == -1)
-            return -1;
+	while (n) {
+		l_remove(*src, NULL, &data);
+		if (l_append(dst, NULL, data) == -1)
+			return -1;
 
-        n = (*src)->head;
-    }
+		n = (*src)->head;
+	}
 
-    l_destroy(*src);
+	l_destroy(*src);
 
-    *src = NULL;
+	*src = NULL;
 
-    return 0;
+	return 0;
 }
 
 #endif /* LIST_H */

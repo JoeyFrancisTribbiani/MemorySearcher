@@ -62,7 +62,6 @@ static const char copy_text[] =
 "This is free software, and you are welcome to redistribute it\n"
 "under certain conditions; type `show copying' for details.\n\n";
 
-
 /* print scanmem and libscanmem version */
 static void printversion(FILE *outfd)
 {
@@ -76,7 +75,6 @@ static void printcopyright(FILE *outfd)
     printversion(outfd);
     fprintf(outfd, "\n%s", copy_text);
 }
-
 
 static const char help_text[] =
 "Usage: scanmem [OPTION]... [PID]\n"

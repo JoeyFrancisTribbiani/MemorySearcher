@@ -285,5 +285,6 @@ bool sm_execcommand(globals_t *vars, const char *commandline)
 
     free(argv);
 
+	printf("cmdline:%s\n", commandline);
     return ret;
 }

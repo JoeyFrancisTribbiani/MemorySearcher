@@ -9,23 +9,27 @@ endif
 # '-O2 -g' are added by `configure`, unless the user overrides CFLAGS
 AM_CFLAGS = -std=gnu99 -Wall
 
-
-# soMemory
-projectlibdir= $(includedir)/scanmem
-projectlib_PROGRAMS=libmemory.so
-libmemory_so_includedir=-I./src
-libmemory_sodir=-I./
-libmemory_so_HEADERS=common.h \
-	scanmem.h \
-	commands.h \
-	show_message.h \
-	lua.h \
-	lauxlib.h
-libmemory_so_SOURCES=Memory.c \
-	common.h \
+# Utilities library, statically linked in sm and libsm
+noinst_LTLIBRARIES = libutil.la
+libutil_la_SOURCES = common.h \
     common.c \
-    show_message.c \
- 	commands.c \
+    show_message.c
+
+# libscanmem
+lib_LTLIBRARIES = libscanmem.la
+
+libscanmem_la_includedir = $(includedir)/scanmem
+
+libscanmem_la_include_HEADERS = commands.h \
+    list.h \
+    maps.h \
+    scanmem.h \
+    scanroutines.h \
+    show_message.h \
+    targetmem.h \
+    value.h
+
+libscanmem_la_SOURCES = commands.c \
     ptrace.c \
     handlers.h \
     handlers.c \
@@ -39,8 +43,30 @@ libmemory_so_SOURCES=Memory.c \
     sets.c \
     targetmem.c \
     value.c 
-#libmemory_so_LDADD = lua
-libmemory_so_LDFLAGS= --shared -fpic -L./  -llua
+
+if !HAVE_GETLINE
+  libscanmem_la_SOURCES += getline.h \
+      getline.c
+endif
+
+libscanmem_la_LIBADD = libutil.la
+
+libscanmem_la_LDFLAGS = -version-info 1:0:0 \
+                        -export-symbols-regex '^sm_'
+
+# scanmem CLI
+bin_PROGRAMS = scanmem
+
+scanmem_SOURCES = menu.h \
+    menu.c \
+    main.c
+
+if !WITH_READLINE
+  scanmem_SOURCES += readline.h \
+      readline.c
+endif
+
+scanmem_LDADD = libutil.la libscanmem.la
 
 # Misc
 dist_man_MANS = scanmem.1

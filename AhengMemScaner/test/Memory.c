@@ -110,7 +110,7 @@ unsigned char *read_memory(int pid, long long start_addr, long long len)
 	}
 
 	/*read mem*/
-	unsigned char *buf = (unsigned char *)malloc(sizeof(long));
+	unsigned char *buf = (unsigned char *)malloc(len);
 	if (buf == NULL) {
 		fprintf(stderr, "malloc failed.\n");
 		perror("malloc");
@@ -119,13 +119,7 @@ unsigned char *read_memory(int pid, long long start_addr, long long len)
 		return READ_FAIL;
 	}
 	int rd_sz;
-	printf("before read interrupt,len:%lld,bufsize:%lld,strlen:%lld,bufcontent:%d\n", len,
-	       sizeof(buf),strlen(buf),(long)buf);
-	long mybuf;
-	rd_sz = read(fd, buf, sizeof(int));
-	//rd_sz = read(fd, mybuf, sizeof(int));
-	printf("after read interrupt,len:%lld,bufsize:%lld,rd_sz:%lld, bufcontent:%d\n", len,
-	       sizeof(mybuf),rd_sz),(long)buf;
+	rd_sz = read(fd, buf, len);
 	if (rd_sz < len) {
 		fprintf(stderr, "read failed.\n");
 		perror("read");
@@ -250,31 +244,35 @@ const char *set_scan_data_type(globals_t *vars, const char *type_str)
 
 bool get_addrs(globals_t *vars, lua_State *L,list_t* matched)
 {
-	char *cmd = "list ";
-	sm_execcommand(vars, cmd);
+	//char *cmd = "list ";
+	//sm_execcommand(vars, cmd);
+	//lua_newtable(L); //创建一个表格，放在栈顶
+	printf("in get_addrs and list done and new table.\n");
+
+	//int index = 1;
+	////element_t *np = matched->head;
+	//element_t *np = matched->head;
+	////lua_settop(L,0);
 	//lua_newtable(L); //创建一个表格，放在栈顶
 	//printf("in get_addrs and list done and new table.\n");
-
-	int index = 1;
-	//element_t *np = matched->head;
-	element_t *np = matched->head;
-	//lua_settop(L,0);
-	lua_newtable(L); //创建一个表格，放在栈顶
-	while (np) {
-		unsigned long addr = np->data;
-		printf("this is c print:%llx", addr);
-		lua_pushinteger(L, addr);
-		lua_rawseti(L, -2, index); //set array[0] by -1
-		np = np->next;
-		index++;
-	}
-	// 清理栈顶
+	//while (np) {
+	//	unsigned long addr = np->data;
+	//	printf("this is c print:%llx", addr);
+	//	lua_pushinteger(L, addr);
+	//	lua_rawseti(L, -2, index); //set array[0] by -1
+	//	np = np->next;
+	//	index++;
+	//}
+	//// 清理栈顶
 	//lua_pop(L, 1);
 }
 
 bool match_arr_addrs(globals_t *vars, lua_State *L,long long len)
 {
 	char *cmd = "list ";
+	//char cmd[strlen(cmd_head) + strlen(data) + 1];
+	//sprintf(cmd, "%s%s", cmd_head, data);
+	//printf(cmd);
 	sm_execcommand(vars, cmd);
 
 	list_t *matched = l_init();
@@ -285,14 +283,11 @@ bool match_arr_addrs(globals_t *vars, lua_State *L,long long len)
 		bool all_matched = true;
 		// 从第一个条件开始
 		element_t *condition = vars->data_arr->head->next;
-		printf("1st condition:%ld\n", condition->data);
 		while (condition) {
 			// 第一个条件项存储地址偏移
 			long long check_addr = (long long)np->data + (long long)condition->data;
-			printf("1st addressed:%llx\n", check_addr);
 			long long check_mem_value =
 				read_memory(vars->target, check_addr, len);
-			printf("1st addressed memory:%lld\n", check_mem_value);
 
 			// 把读到的值和第二个条件项的值比较
 			long long accept_value = condition->next->data;
@@ -323,16 +318,14 @@ static int Read(lua_State *L)
 	int pid = find_pid_of(pkg_name);
 	int len = type_to_len(type_str);
 
-	//unsigned char *data = read_memory(pid, start_addr, len);
-	long *data = malloc(sizeof(long));
-	sm_read_array(pid, start_addr, data, len);
+	unsigned char *data = read_memory(pid, start_addr, len);
 
 	if (!strcmp((const char *)data, READ_FAIL)) {
 		printf("Read fail");
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "read failed");
 	} else {
-		printf("Read success,content:%ld\n",data);
+		printf("Read success");
 		lua_pushboolean(L, 1);
 		lua_pushstring(L, data);
 	}
@@ -376,128 +369,73 @@ static int Write(lua_State *L)
 static int Search(lua_State *L)
 {
 	const char *pkg_name = luaL_checkstring(L, 1);
-		//const char *data = luaL_checkstring(L, 2);
+		const char *data = luaL_checkstring(L, 2);
 	const char *type_str = luaL_checkstring(L, 3);
 
+	//lua_newtable(L); //创建一个表格，放在栈顶
+	printf("in get_addrs and list done and new table.\n");
 
-	if (strcmp(type_str, "String") == 0) {
-		const char *data = luaL_checkstring(L, 2);
-		int ret = EXIT_SUCCESS;
-		globals_t *vars = &sm_globals;
+	globals_t *vars = &sm_globals;
+	char *cmd_head = "\" ";
 
-		if (!sm_init()) {
-			show_error("Initialization failed.\n");
-			sm_cleanup();
-			return EXIT_FAILURE;
-		}
+	char cmd[strlen(cmd_head) + strlen(data) + 1];
+	sprintf(cmd, "%s%s", cmd_head, data);
+	sm_execcommand(vars, cmd);
 
-		if (getuid() != 0) {
-			show_warn(
-				"Run scanmem as root if memory regions are missing. "
-				"See scanmem man page.\n\n");
-		}
-
-		/* this will initialize matches and regions */
-		if (sm_execcommand(vars, "reset") == false) {
-			vars->target = 0;
-		}
-
-		// 设置搜索的类型
-		set_scan_data_type(vars, type_str);
-		printf("vars->scan_type:%d\n", vars->options.scan_data_type);
-
-		// 获取pid，调用pid cmd
-		pid_t pid = find_pid_of(pkg_name);
-		char *cmd_head = "pid ";
-		char cmd[strlen(cmd_head) + sizeof(pid) + 1];
-		sprintf(cmd, "%s %d", cmd_head, pid);
-		sm_execcommand(vars, cmd);
-
-
-		// 调用 " 命令
-		cmd_head = "\" ";
-		char s_cmd[strlen(cmd_head) + strlen(data) + 1];
-		sprintf(s_cmd, "%s%s", cmd_head, data);
-		sm_execcommand(vars, s_cmd);
-
-		// 调用 list 命令
-		cmd_head = "list ";
-		sm_execcommand(vars, cmd_head);
-
-		// 返回table
-		int index = 1;
-		element_t *np = vars->addrs->head;
-		lua_newtable(L); //创建一个表格，放在栈顶
-		printf("in get_addrs and list done and new table.\n");
-		while (np) {
-			unsigned long addr = np->data;
-			printf("this is c print:%llx\n", addr);
-			lua_pushinteger(L, addr);
-			lua_rawseti(L, -2, index); //set array[0] by -1
-			np = np->next;
-			index++;
-		}
-		// 清理栈顶
-		//lua_pop(L, 1);
-	}
-	 else {
-		globals_t *vars = &sm_globals;
-	
-		if (!sm_init()) {
-			show_error("Initialization failed.\n");
-			sm_cleanup();
-			return EXIT_FAILURE;
-		}
-
-		if (getuid() != 0) {
-			show_warn(
-				"Run scanmem as root if memory regions are missing. "
-				"See scanmem man page.\n\n");
-		}
-
-		/* this will initialize matches and regions */
-		if (sm_execcommand(vars, "reset") == false) {
-			vars->target = 0;
-		}
-
-		// 设置搜索的类型
-		set_scan_data_type(vars, type_str);
-		printf("vars->scan_type:%d\n", vars->options.scan_data_type);
-
-		// 获取pid，调用pid cmd
-		pid_t pid = find_pid_of(pkg_name);
-		char *cmd_head = "pid ";
-		char cmd[strlen(cmd_head) + sizeof(pid) + 1];
-		sprintf(cmd, "%s %d", cmd_head, pid);
-		sm_execcommand(vars, cmd);
-
-
-		// 调用 = 命令
-		lua_pushvalue(L, -2);
-		lua_pushnil(L);
-		while (lua_next(L, -2)) {
-			long long value = luaL_checkinteger(L, -1);
-			l_append(vars->data_arr, vars->data_arr->tail, value);
-			lua_pop(L, 1);
-		}
-		lua_pop(L, 1);
-
-		printf("head data:%ld\n", vars->data_arr->head->data);
-
-
-		long long s_data = (long long)vars->data_arr->head->data;
-		cmd_head = "= ";
-		char s_cmd[strlen(cmd_head) + sizeof(s_data) + 1];
-		sprintf(s_cmd, "%s%d", cmd_head, s_data);
-		printf("get data from lua table cmd:%s.\n", s_cmd);
-		sm_execcommand(vars, s_cmd);
-		//sm_execcommand(vars, "= 7131126");
-
-		long long len = type_to_len(type_str);
-		match_arr_addrs(vars, L, len);
-		return 1;
-	}
+	get_addrs(vars, L, vars->addrs);
 	return 1;
+
+	//globals_t *vars = &sm_globals;
+	//if (strcmp(type_str, "String") == 0) {
+
+	//	const char *data = luaL_checkstring(L, 2);
+
+	//	if (scanmem_init(pkg_name, type_str) == EXIT_FAILURE) {
+	//		lua_pushboolean(L, 0);
+	//		lua_pushstring(L, "permission error");
+	//		return 2;
+	//	}
+	//	char *cmd_head = "\" ";
+
+	//	char cmd[strlen(cmd_head) + strlen(data) + 1];
+	//	sprintf(cmd, "%s%s", cmd_head, data);
+	//	sm_execcommand(vars, cmd);
+
+	//	get_addrs(vars, L, vars->addrs);
+
+	//	return 1;
+	//} else {
+	//	int arr_count = 0;
+	//	lua_pushvalue(L, 2);
+	//	lua_pushnil(L);
+	//	while (lua_next(L, -2)) {
+	//		long long key = lua_tonumber(L, -2);
+	//		long long value = lua_tointeger(L, -1);
+	//		l_append(vars->data_arr, vars->data_arr->tail, value);
+	//		lua_pop(L, 1);
+	//		arr_count++;
+	//	}
+	//	lua_pop(L, 1);
+	//	//printf("pkg_name:%s,data:%s,type:%s", pkg_name, data, type_str);
+
+	//	if (scanmem_init(pkg_name, type_str) == EXIT_FAILURE) {
+	//		lua_pushboolean(L, 0);
+	//		lua_pushstring(L, "permission error");
+	//		return 2;
+	//	}
+
+	//	char *cmd_head = "\" ";
+	//	/*if (strcmp(type_str, "String") != 0) {
+	//		cmd_head = "= ";
+	//	}*/
+	//	char cmd[strlen(cmd_head) + sizeof(long) + 1];
+	//	sprintf(cmd, "%s%s", cmd_head, vars->data_arr->head->data);
+	//	sm_execcommand(vars, cmd);
+
+	//	long long len = type_to_len(type_str);
+	//	match_arr_addrs(vars, L, len);
+	//	return 1;
+	//}
 }
 static int hello(lua_State *L)
 {
@@ -610,25 +548,25 @@ int type_to_len(char *type_str)
 	//}
 
 	if (!strcmp(type_str, "I8"))
-		return sizeof(int8_t);
+		return 1;
 	if (!strcmp(type_str, "U8"))
-		return sizeof(uint8_t);
+		return 1;
 	if (!strcmp(type_str, "I16"))
-		return sizeof(int16_t);
+		return 2;
 	if (!strcmp(type_str, "U16"))
-		return sizeof(uint16_t);
+		return 2;
 	if (!strcmp(type_str, "I32"))
-		return sizeof(int32_t);
+		return 4;
 	if (!strcmp(type_str, "U32"))
-		return sizeof(uint32_t);
+		return 4;
 	if (!strcmp(type_str, "I64"))
-		return sizeof(int64_t);
+		return 8;
 	if (!strcmp(type_str, "U64"))
-		return sizeof(uint64_t);
+		return 8;
 	if (!strcmp(type_str, "F32"))
-		return sizeof(int32_t);
+		return 4;
 	if (!strcmp(type_str, "F64"))
-		return sizeof(int64_t);
+		return 8;
 	if (!strcmp(type_str, "String"))
 		return 128;
 }

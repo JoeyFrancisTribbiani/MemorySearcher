@@ -68,6 +68,7 @@ globals_t sm_globals = {
         1,                      /* dump_with_ascii */
         0,                      /* reverse_endianness */
     },
+	NULL,
 	NULL
 };
 
@@ -112,6 +113,7 @@ bool sm_init(void)
     /* before attaching to target, install signal handler to detach on error */
     if (vars->options.debug == 0) /* in debug mode, let it crash and see the core dump */
     {
+	    printf("option debug\n");
         (void) signal(SIGHUP, sighandler);
         (void) signal(SIGINT, sighandler);
         (void) signal(SIGSEGV, sighandler);
